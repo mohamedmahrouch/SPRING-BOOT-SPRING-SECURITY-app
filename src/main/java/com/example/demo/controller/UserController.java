@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,7 +13,9 @@ import java.util.Optional;
 public class UserController {
     private final UserService userService;
 
-    public UserController(UserService userService) { this.userService = userService; }
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -38,4 +41,14 @@ public class UserController {
     public void deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
     }
+    @GetMapping("/by-email/{email}")
+    public ResponseEntity<List<User>> getByEmail(@PathVariable String email) {
+        List<User> users = userService.findusers(email);
+        return users.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(users);
+    }
+    @GetMapping("/byname")
+    public List<User> recupere(@RequestParam String name) {
+        return userService.recupereuser(name);
+    }
+
 }
