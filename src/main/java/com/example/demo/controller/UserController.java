@@ -2,12 +2,16 @@ package com.example.demo.controller;
 
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
+
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -16,7 +20,17 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
+@PostMapping("/inscription")
+@ResponseStatus(HttpStatus.CREATED)
+    public User inscription(@RequestBody User user) {
+    log.info("Creating user: {}", user);
+    try {
+        return userService.createUser(user);
+    } catch (Exception e) {
+        log.error("Erreur lors de la création de l'utilisateur", e);
+        throw e;
+    }
+    }
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
@@ -26,7 +40,7 @@ public class UserController {
     public Optional<User> getUserById(@PathVariable String id) {
         return userService.getUserById(id);
     }
-
+  @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public User createUser(@RequestBody User user) {
         return userService.createUser(user);
