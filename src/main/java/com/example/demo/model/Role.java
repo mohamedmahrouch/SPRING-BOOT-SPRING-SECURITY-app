@@ -1,15 +1,15 @@
 package com.example.demo.model;
-
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "users")
+import java.util.UUID;
+
+@Document("roles")
 @Data
-public class User {
+public class Role {
     @Id
-    private String id;
-    private String name;
-    private String email;
+    private String id = UUID.randomUUID().toString();;
+    private TypeRole libelle;
 
 }
