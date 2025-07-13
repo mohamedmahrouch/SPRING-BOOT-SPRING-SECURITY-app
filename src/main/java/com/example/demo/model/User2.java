@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -11,36 +12,39 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-
 @Document(collection = "users")
 @Data
 public class User2 implements UserDetails {
+
     @Id
-    private String id = UUID.randomUUID().toString();;
+    private String id = UUID.randomUUID().toString();
+
     private String email;
     private String password;
     private String name;
     private boolean actif = false;
+
     @DBRef
     private Role role;
 
+
     @Override
-
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
+        if (this.role == null || this.role.getLibelle() == null) {
+            return List.of();
+        }
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.getLibelle()));
     }
-
-
 
     @Override
     public String getPassword() {
         return this.password;
     }
 
+
     @Override
     public String getUsername() {
-        return this.name;
+        return this.email;
     }
 
     @Override

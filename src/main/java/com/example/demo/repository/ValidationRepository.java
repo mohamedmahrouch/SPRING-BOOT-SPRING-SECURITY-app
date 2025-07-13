@@ -6,6 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ValidationRepository extends MongoRepository<Validation, Integer> {
-
     Validation findByCode(String code);
 }
