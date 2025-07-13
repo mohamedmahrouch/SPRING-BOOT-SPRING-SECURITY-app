@@ -7,6 +7,9 @@ import com.example.demo.model.Validation;
 import com.example.demo.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,20 +20,26 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final ValidationService validationService;
+
     @Autowired
-    private ValidationService validationService;
-
-
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       BCryptPasswordEncoder passwordEncoder,
+                       ValidationService validationService) {
         this.userRepository = userRepository;
-
-
+        this.passwordEncoder = passwordEncoder;
+        this.validationService = validationService;
     }
 
+    @Override
+    public User2 loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+    }
 
     public List<User2> getAllUsers() {
         return userRepository.findAll();
@@ -41,26 +50,24 @@ public class UserService {
     }
 
     public User2 createUser(User2 user) {
-
         log.info("dans le service user :");
 
-        List<User2> list = this.userRepository.findByEmail(user.getEmail());
-        if (!list.isEmpty()) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-        if (!user.getEmail().contains("@")|| !user.getEmail().contains(".com")|| !user.getEmail().contains("@gmail.com")) {
+
+        if (!user.getEmail().matches("^[\\w-\\.]+@gmail\\.com$")) {
             throw new RuntimeException("Email is not valid");
         }
-        String motdepasse = this.passwordEncoder.encode(user.getPassword());
-        user.setPassword(motdepasse);
 
-        Role role =  new Role();
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        Role role = new Role();
         role.setLibelle(TypeRole.USER);
-        log.info("role: {}", role);
         user.setRole(role);
+
         log.info("user avant la validation: {}", user);
         this.validationService.createValidation(user);
-        log.info("user avant userRepository.save(user): {}", user);
         return userRepository.save(user);
     }
 
@@ -76,23 +83,21 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public List<User2> findusers(String email) {
+    public Optional<User2> finduser(String email) {
         return userRepository.findByEmail(email);
     }
-    public List<User2> recupereuser(String name) {
+
+    public Optional<User2> recupereuser(String name) {
         return userRepository.findByName(name);
     }
 
-    public void verification(Map<String, String> activation) {
-
-        Validation validation=this.validationService.verification(activation.get("code"));
-        if(Instant.now().isAfter(validation.getExpire())){
+    public void activer(Map<String, String> activation) {
+        Validation validation = this.validationService.verification(activation.get("code"));
+        if (Instant.now().isAfter(validation.getExpire())) {
             throw new RuntimeException("votre code d'activation est expiré");
         }
         User2 userrecuprer = validation.getUtilisateur();
-        log.info("userrecuprer: {}", userrecuprer);
-        String iduser =userrecuprer.getId();
-        this.userRepository.findById(iduser).ifPresent(user -> {
+        this.userRepository.findById(userrecuprer.getId()).ifPresent(user -> {
             user.setActif(true);
             this.userRepository.save(user);
         });
