@@ -29,25 +29,48 @@ public class JwtSecurity {
         log.info("user info: {}", user);
        return this.generatetocken(user);
     }
-        private Map<String,String> generatetocken(User2 user) {
-         Map<String, String> claims = Map.of(
+    private Map<String,String> generatetocken(User2 user) {
+         Map<String, Object> claims = Map.of(
                 "name", user.getUsername(),
                 "id", user.getId()
         );
+         log.info("email user de tocken: {}", user.getEmail());
             final String compact = Jwts.builder()
                     .setIssuedAt(new Date(System.currentTimeMillis()))
                     .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30)) // 30 minutes
+
                     .setSubject(user.getEmail())
-                    .setClaims(claims)
+                    .addClaims(claims)
                     .signWith(getSignKey(), SignatureAlgorithm.HS256)
                     .compact();
             return Map.of("token", compact);
-        }
+    }
 
     private Key getSignKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    public String extractUsername(String token) {
+        log.info("extractUsername");
+        log.info("token: {}", token);
+        log.info("info : {}",Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody());
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        log.info("isvalide");
+
+        final String username = extractUsername(token);
+        log.info("username: {}", username);
+        log.info("username2 :{}",userDetails.getUsername());
+        return username.equals(userDetails.getUsername());
+    }
+
 
 }
 

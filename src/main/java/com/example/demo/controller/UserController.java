@@ -4,14 +4,17 @@ import com.example.demo.dto.AuthentificationDTO;
 import com.example.demo.model.User2;
 import com.example.demo.security.JwtSecurity;
 import com.example.demo.service.UserService;
+import jdk.jshell.Snippet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.net.ssl.SSLEngineResult;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +22,7 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
+@CrossOrigin("*")
 @RequestMapping("/api/users")
 public class UserController {
 
@@ -68,7 +72,7 @@ public class UserController {
 
        Map<String, String> response = new HashMap<>();
        response.put("authenticated", "true");
-
+       response.put("Status",SSLEngineResult.Status.OK.toString());
        response.put("token", jwt.get("token"));
        return response;
 
@@ -81,8 +85,19 @@ public class UserController {
             return response;
         }
     }
+    @PostMapping("/avis")
+    public void ajouterAvis(@RequestBody String nom) {
+        log.info("Avis reçu : {}", nom);
 
-    @GetMapping
+        // Récupérer l'utilisateur authentifié depuis le contexte de sécurité
+        User2 principal =(User2) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Utilisateur authentifié : {}", principal);
+
+
+    }
+
+    @GetMapping()
     public List<User2> getAllUsers() {
         return userService.getAllUsers();
     }
@@ -101,4 +116,5 @@ public class UserController {
     public void deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
     }
+
 }

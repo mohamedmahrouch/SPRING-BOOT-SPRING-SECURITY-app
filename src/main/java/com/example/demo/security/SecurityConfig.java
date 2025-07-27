@@ -7,19 +7,21 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
@@ -28,10 +30,10 @@ public class SecurityConfig {
     }
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return bCryptPasswordEncoder(); // Utilise le même bean
+        return bCryptPasswordEncoder();
     }
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http , AuthenticationProvider authenticationProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http , AuthenticationProvider authenticationProvider,JwtFilter JwtFilter) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -41,6 +43,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
+                .sessionManagement( session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(JwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -52,12 +56,11 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        log.info("Configuring DaoAuthenticationProvider with UserDetailsService and PasswordEncoder");
-        log.info("UserDetailsService : {}", userDetailsService);
+        log.info("Creating DaoAuthenticationProvider : {}",userDetailsService);
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        log.info("PasswordEncoder : {}", passwordEncoder());
-        log.info("DaoAuthenticationProvider configured successfully");
+
         return provider;
     }
+
 }
